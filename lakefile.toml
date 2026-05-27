@@ -1,0 +1,10 @@
+name = "lin2rs"
+version = "0.1.0"
+defaultTargets = ["lin2rs"]
+
+[[lean_lib]]
+name = "Lin2rs"
+
+[[lean_exe]]
+name = "lin2rs"
+root = "Main"
