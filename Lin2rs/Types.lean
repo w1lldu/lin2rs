@@ -4,15 +4,15 @@ namespace Lin2rs
 inductive Qual where
   -- | un : Qual
   -- | aff : Qual
-  | lin : Qual
-  deriving BEq
+  | Lin : Qual
+  deriving BEq, Repr
 
 inductive Pt where
-  | PNat : Pt
-  deriving DecidableEq
+  | Nat : Pt
+  deriving BEq, Repr
 
 def Ty := Qual × Pt
-  deriving BEq
+  deriving BEq, Repr
 
 -- inductive Ty where
 --   | Qp : Qual -> Pt -> Ty
@@ -23,5 +23,6 @@ inductive Tm where
   | Add : Tm -> Tm -> Tm
   | If : Tm -> Tm -> Tm -> Tm
   | Let : String -> Ty -> Tm -> Tm -> Tm
+  deriving Repr
 
 end Lin2rs
