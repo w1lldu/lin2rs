@@ -18,7 +18,7 @@ import Lin2rs.Surface
 
 -- Products
 #tc un (1, 2) : un (un Nat × un Nat)
-#tc lin (1, 2) : lin (un Nat × un Nat)
+#tc lin (1, true) : lin (un Nat × un Bool)
 #tc lin (let x : lin Nat = 1 in x, let y : lin Nat = 2 in y)
       : lin (lin Nat × lin Nat)
 
