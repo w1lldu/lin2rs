@@ -89,43 +89,52 @@ def Builtin3.repr (b3 : Builtin3) :=
   match b3 with
   | Memcpy => "memcpy"
 
+-- add tag to hold types, so that ts is able to provide the type for compilation
 -- keep the names for printing
-inductive Tm : Nat -> Type where
-  | Num : Nat -> Tm n
-  | Bool : Bool -> Tm n
-  | Prod : Qual -> Tm n -> Tm n -> Tm n
-  | BVar : String -> Fin n -> Tm n
-  | FVar : String -> Tm n
-  | Add : Tm n -> Tm n -> Tm n
-  | If : Tm n -> Tm n -> Tm n -> Tm n
-  | Split : Tm n -> String -> String -> Tm (n + 2) -> Tm n
-  | Let : String -> Ty -> Tm n -> Tm (n + 1) -> Tm n
-  | Builtin1 : Builtin1 -> Tm n -> Tm n
-  | Builtin3 : Builtin3 -> Tm n -> Tm n -> Tm n -> Tm n
-  deriving Repr, BEq
+inductive Tm : Nat -> Type u -> Type (u + 1)
+  | Num : Nat -> α -> Tm n α
+  | Bool : Bool -> α -> Tm n α
+  | Prod : Qual -> Tm n α -> Tm n α -> α -> Tm n α
+  | BVar : String -> Fin n -> α -> Tm n α
+  | FVar : String -> Tm n α
+  | Add : Tm n α -> Tm n α -> α -> Tm n α
+  | If : Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
+  | Split : Tm n α -> String -> String -> Tm (n + 2) α -> α -> Tm n α
+  | Let : String -> Ty -> Tm n α -> Tm (n + 1) α -> α -> Tm n α
+  | Builtin1 : Builtin1 -> Tm n α -> α -> Tm n α
+  | Builtin3 : Builtin3 -> Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
 
 -- rename?
-inductive Imm : Nat -> Type where
-  | Num : Nat -> Imm n
-  | Bool : Bool -> Imm n
-  | BVar : String -> Fin n -> Imm n
-  | FVar : String -> Imm n
+inductive Imm : Nat -> Type u -> Type (u + 1)
+  | Num : Nat -> α -> Imm n α
+  | Bool : Bool -> α -> Imm n α
+  | BVar : String -> Fin n -> α -> Imm n α
+  | FVar : String -> Imm n α
 
 mutual
   inductive CTm : Nat -> Type u -> Type (u + 1) where
-    | Prod : Qual -> Imm n -> Imm n -> α -> CTm n α
-    | Add : Imm n -> Imm n -> CTm n α
+    | Prod : Qual -> Imm n α -> Imm n α -> α -> CTm n α
+    | Add : Imm n α -> Imm n α -> α -> CTm n α
     -- If needs a tag to unify the two branches
-    | If : Imm n -> ATm n α -> ATm n α -> α -> CTm n α
-    | Builtin1 : Builtin1 -> Imm n  -> CTm n α
-    | Builtin3 : Builtin3 -> Imm n -> Imm n -> Imm n  -> CTm n α
-    | Imm : Imm n -> CTm n α
+    | If : Imm n α -> ATm n α -> ATm n α -> α -> CTm n α
+    | Builtin1 : Builtin1 -> Imm n α -> α -> CTm n α
+    | Builtin3 : Builtin3 -> Imm n α -> Imm n α -> Imm n α -> α -> CTm n α
+    | Imm : Imm n α -> CTm n α
 
   inductive ATm : Nat -> Type u -> Type (u + 1) where
     -- use Imm bc decreases overlap in compilation (compile_imm vs set_result_to compile_ctm)
-    | Split : Imm n -> String -> String -> ATm (n + 2) α -> α -> ATm n α
+    | Split : Imm n α -> String -> String -> ATm (n + 2) α -> α -> ATm n α
     | Let : String -> Ty -> CTm n α -> ATm (n + 1) α -> α -> ATm n α
     | CTm : CTm n α -> ATm n α
 end
+
+def Imm.tag (imm : Imm n α) : α :=
+  sorry
+
+def CTm.tag (ctm : CTm n α) : α :=
+  sorry
+
+def ATm.tag (atm : ATm n α) : α :=
+  sorry
 
 end Compile
