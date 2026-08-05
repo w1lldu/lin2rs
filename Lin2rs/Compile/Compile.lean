@@ -85,16 +85,25 @@ mutual
   -- todo: take into account qualifiers?
   def compile_ctm (ctm : CTm n Nat) (env : Vector String n) : List String :=
     match ctm with
-    | .Prod _ l r => [ "{ " ++ compile_imm l env ++ ", " ++ compile_imm r env ++ " }" ]
+    | .Prod _ l r t =>
+      let prod := "prod" ++ t.repr
+      let prodp := "prodp" ++ t.repr
+      [
+        "struct prod " ++ prod ++ " = { " ++ compile_imm l env ++ ", " ++ compile_imm r env ++ " }",
+        "LL " ++ prodp ++ " == (LL) &" ++ prod,
+        prodp
+      ]
     | .Add i1 i2 => [ compile_imm i1 env ++ " + " ++ compile_imm i2 env ]
     | .If cond thn els t =>
       let res := "if" ++ t.repr
-      ("int " ++ res) ::
-      -- if (...) {...}; is valid
-      ("if (" ++ compile_imm cond env ++ ") {" ++
+      [
+        "int " ++ res,
+        -- if (...) {...}; is valid
+        "if (" ++ compile_imm cond env ++ ") {" ++
       collapse (set_result (compile_atm thn env) res) ++ "} else {" ++
-      collapse (set_result (compile_atm els env) res) ++ "}" ) ::
-      [res]
+      collapse (set_result (compile_atm els env) res) ++ "}",
+        res
+      ]
     | .Builtin1 b1 i => [ b1.repr ++ "(" ++ compile_imm i env ++ ")" ]
     | .Builtin3 b3 i1 i2 i3 => [ b3.repr ++ "(" ++ compile_imm i1 env ++ ", " ++ compile_imm i2 env ++ ", " ++ compile_imm i3 env ++ ")" ]
     | .Imm imm => [ compile_imm imm env ]
@@ -106,7 +115,7 @@ mutual
       let prod := "p" ++ t.repr
       let prodl := "l" ++ t.repr ++ l
       let prodr := "r" ++ t.repr ++ r
-      define prod ((compile_imm p env)) ::
+      ("struct prod " ++ prod ++ " = *(struct prod *) " ++ (compile_imm p env)) ::
       define prodl (prod ++ ".l") ::
       define prodr (prod ++ ".r") ::
       compile_atm body ((env.push prodr).push prodl)
@@ -119,7 +128,7 @@ end
 
 -- struct prod { int l ; int r };
 
--- add stuff at beginning
+-- add stuff at beginning (see test.c)
 -- todo: add indentation (or autoformat?)
 def compile_to_string (tm : Tm n) : String :=
   collapse (compile_atm (tag_atm (anf tm) 0).fst #v[])

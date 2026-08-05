@@ -113,7 +113,7 @@ inductive Imm : Nat -> Type where
 
 mutual
   inductive CTm : Nat -> Type u -> Type (u + 1) where
-    | Prod : Qual -> Imm n -> Imm n -> CTm n α
+    | Prod : Qual -> Imm n -> Imm n -> α -> CTm n α
     | Add : Imm n -> Imm n -> CTm n α
     -- If needs a tag to unify the two branches
     | If : Imm n -> ATm n α -> ATm n α -> α -> CTm n α
