@@ -1,3 +1,6 @@
+import Lean
+
+open Lean
 
 namespace Compile
 
@@ -9,25 +12,25 @@ inductive Qual where
   | Lin : Qual
   deriving Repr, BEq, DecidableEq
 
--- def Qual.le (q1 q2 : Qual) : Bool:=
---   match q1, q2 with
---   | .Un, .Lin => true
---   | .Lin, .Un => false
---   | _, _ => true
+def Qual.le (q1 q2 : Qual) : Bool:=
+  match q1, q2 with
+  | Un, Lin => true
+  | Lin, Un => false
+  | _, _ => true
 
--- instance : LE Qual where
---   le q1 q2 := Qual.le q1 q2 = true
+instance : LE Qual where
+  le q1 q2 := Qual.le q1 q2 = true
 
--- instance : LT Qual where
---   lt q1 q2 := q1 ≤ q2 ∧ q1 ≠ q2
+instance : LT Qual where
+  lt q1 q2 := q1 ≤ q2 ∧ q1 ≠ q2
 
--- instance {q1 q2 : Qual} : Decidable (q1 ≤ q2) := by
---   simp [LE.le]
---   infer_instance
+instance {q1 q2 : Qual} : Decidable (q1 ≤ q2) := by
+  simp [LE.le]
+  infer_instance
 
--- instance (q1 q2 : Qual) : Decidable (q1 < q2) := by
---   simp [LT.lt]
---   infer_instance
+instance (q1 q2 : Qual) : Decidable (q1 < q2) := by
+  simp [LT.lt]
+  infer_instance
 
 mutual
   inductive Pt where
@@ -48,93 +51,187 @@ mutual
     deriving Repr, BEq, DecidableEq
 end
 
--- def Ty.le (ty1 ty2 : Ty) : Bool :=
---   match ty1, ty2 with
---     | (.mk q1 .Nat), (.mk q2 .Nat) | (.mk q1 .Bool), (.mk q2 .Bool) => q1 ≤ q2
---     | (.mk q1 (.Prod ty1l ty1r)), (.mk q2 (.Prod ty2l ty2r)) => q1 ≤ q2 ∧ Ty.le ty1l ty2l ∧ Ty.le ty1r ty2r
---     | _, _ => false
---   termination_by sizeOf ty1 + sizeOf ty2
+def Ty.le (ty1 ty2 : Ty) : Bool :=
+  match ty1, ty2 with
+    | (mk q1 .Nat), (mk q2 .Nat) | (mk q1 .Bool), (mk q2 .Bool) => q1 ≤ q2
+    | (mk q1 (.Prod ty1l ty1r)), (mk q2 (.Prod ty2l ty2r)) => q1 ≤ q2 ∧ Ty.le ty1l ty2l ∧ Ty.le ty1r ty2r
+    | _, _ => false
+  termination_by sizeOf ty1 + sizeOf ty2
 
--- instance : LE Ty where
---   le ty1 ty2 := Ty.le ty1 ty2 = true
+instance : LE Ty where
+  le ty1 ty2 := Ty.le ty1 ty2 = true
 
--- instance : LT Ty where
---   lt ty1 ty2 := ty1 ≤ ty2 ∧ ty1 ≠ ty2
+instance : LT Ty where
+  lt ty1 ty2 := ty1 ≤ ty2 ∧ ty1 ≠ ty2
 
--- instance (ty1 ty2 : Ty) : Decidable (ty1 ≤ ty2) := by
---   simp [LE.le]
---   infer_instance
+instance (ty1 ty2 : Ty) : Decidable (ty1 ≤ ty2) := by
+  simp [LE.le]
+  infer_instance
 
--- instance (ty1 ty2 : Ty) : Decidable (ty1 < ty2) := by
---   simp [LT.lt]
---   infer_instance
+instance (ty1 ty2 : Ty) : Decidable (ty1 < ty2) := by
+  simp [LT.lt]
+  infer_instance
 
-inductive Builtin1 where
-  | Alloc : Builtin1
-  | Free : Builtin1
-  | Fill_rnd : Builtin1
+inductive Builtin : Nat -> Type
+  | Add : Builtin 2
+  | Alloc : Builtin 1
+  | Free : Builtin 1
+  | Fill_rnd : Builtin 1
+  | Memcpy : Builtin 3
   deriving Repr, BEq
 
-def Builtin1.repr (b1 : Builtin1) :=
-  match b1 with
+def Builtin.repr (b : Builtin n) :=
+  match b with
+  | Add => "add"
   | Alloc => "alloc"
   | Free => "free"
   | Fill_rnd => "fill_rnd"
-
-inductive Builtin3 where
-  | Memcpy : Builtin3
-  deriving Repr, BEq
-
-def Builtin3.repr (b3 : Builtin3) :=
-  match b3 with
   | Memcpy => "memcpy"
 
--- add tag to hold types, so that ts is able to provide the type for compilation
+inductive Exp where
+  | Num : Nat -> Exp
+  | Bool : Bool -> Exp
+  | Prod : Qual -> Exp -> Exp -> Exp
+  | Id : String -> Exp
+  | If : Exp -> Exp -> Exp -> Exp
+  | Split : Exp -> String -> String -> Exp -> Exp
+  | Let : String -> Ty -> Exp -> Exp -> Exp
+  | Builtin : Builtin n -> List Exp -> Exp
+  deriving Repr, BEq
+
 -- keep the names for printing
-inductive Tm : Nat -> Type u -> Type (u + 1)
-  | Num : Nat -> α -> Tm n α
-  | Bool : Bool -> α -> Tm n α
-  | Prod : Qual -> Tm n α -> Tm n α -> α -> Tm n α
-  | BVar : String -> Fin n -> α -> Tm n α
-  | FVar : String -> Tm n α
-  | Add : Tm n α -> Tm n α -> α -> Tm n α
-  | If : Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
-  | Split : Tm n α -> String -> String -> Tm (n + 2) α -> α -> Tm n α
-  | Let : String -> Ty -> Tm n α -> Tm (n + 1) α -> α -> Tm n α
-  | Builtin1 : Builtin1 -> Tm n α -> α -> Tm n α
-  | Builtin3 : Builtin3 -> Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
-
--- rename?
-inductive Imm : Nat -> Type u -> Type (u + 1)
-  | Num : Nat -> α -> Imm n α
-  | Bool : Bool -> α -> Imm n α
-  | BVar : String -> Fin n -> α -> Imm n α
-  | FVar : String -> Imm n α
-
 mutual
-  inductive CTm : Nat -> Type u -> Type (u + 1) where
-    | Prod : Qual -> Imm n α -> Imm n α -> α -> CTm n α
-    | Add : Imm n α -> Imm n α -> α -> CTm n α
-    -- If needs a tag to unify the two branches
-    | If : Imm n α -> ATm n α -> ATm n α -> α -> CTm n α
-    | Builtin1 : Builtin1 -> Imm n α -> α -> CTm n α
-    | Builtin3 : Builtin3 -> Imm n α -> Imm n α -> Imm n α -> α -> CTm n α
-    | Imm : Imm n α -> CTm n α
+  inductive TmVec : Nat -> Nat -> Type u -> Type (u + 1) where
+    | nil : TmVec 0 n α
+    | cons : Tm n α -> TmVec l n α -> TmVec (l + 1) n α
+  -- deriving Repr, BEq
 
-  inductive ATm : Nat -> Type u -> Type (u + 1) where
-    -- use Imm bc decreases overlap in compilation (compile_imm vs set_result_to compile_ctm)
-    | Split : Imm n α -> String -> String -> ATm (n + 2) α -> α -> ATm n α
-    | Let : String -> Ty -> CTm n α -> ATm (n + 1) α -> α -> ATm n α
-    | CTm : CTm n α -> ATm n α
+  inductive Tm : Nat -> Type u -> Type (u + 1)
+    | Num {n α} : Nat -> α -> Tm n α
+    | Bool {n α} : Bool -> α -> Tm n α
+    | Prod {n α} : Qual -> Tm n α -> Tm n α -> α -> Tm n α
+    | BVar {n α} : String -> Fin n -> α -> Tm n α
+    | FVar {n α} : String -> α -> Tm n α
+    | If {n α} : Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
+    | Split {n α} : Tm n α -> String -> String -> Tm (n + 2) α -> α -> Tm n α
+    | Let {n α} : String -> Ty -> Tm n α -> Tm (n + 1) α -> α -> Tm n α
+    | Builtin {n α} (l) : Builtin l -> TmVec l n α -> α -> Tm n α
+  -- deriving Repr, BEq
 end
 
-def Imm.tag (imm : Imm n α) : α :=
-  sorry
+mutual
+  def beqTmVec [BEq α] : TmVec l n α -> TmVec l n α -> Bool
+    | .nil, .nil => true
+    | .cons t ts, .cons t' ts' =>
+      beqTm t t' && beqTmVec ts ts'
+    | _, _ => false
 
-def CTm.tag (ctm : CTm n α) : α :=
-  sorry
+  def beqTm [BEq α] : Tm n α -> Tm n α -> Bool
+    | .Num num a, .Num num' a' =>
+      num == num' && a == a'
+    | .Bool b a, .Bool b' a' =>
+      b == b' && a == a'
+    | .Prod q l r a, .Prod q' l' r' a' =>
+      q == q' && beqTm l l' && beqTm r r' && a == a'
+    | .BVar id idx a, .BVar id' idx' a' =>
+      id == id' && idx == idx' && a == a'
+    | .FVar id a, .FVar id' a' =>
+      id == id' && a == a'
+    | .If cond thn els a, .If cond' thn' els' a' =>
+      beqTm cond cond' && beqTm thn thn' && beqTm els els' && a == a'
+    | .Split p l r body a, .Split p' l' r' body' a' =>
+      beqTm p p' && l == l' && r == r' && beqTm body body' && a == a'
+    | .Let id ty assn body a, .Let id' ty' assn' body' a' =>
+      id == id' && ty == ty' && beqTm assn assn' && beqTm body body' && a == a'
+    | .Builtin l b tv a, .Builtin l' b' tv' a' =>
+      if h : l = l' then
+        -- thanks LLM
+        match h with
+        | rfl => b == b' && beqTmVec tv tv' && a == a'
+      else
+        false
+    | _, _ => false
+end
 
-def ATm.tag (atm : ATm n α) : α :=
-  sorry
+instance [BEq α] : BEq (TmVec l n α) where
+  beq := beqTmVec
+
+instance [BEq α] : BEq (Tm n α) where
+  beq := beqTm
+
+mutual
+  def reprTmVec [Repr α] (tv : TmVec l n α) (prec : Nat) : Format :=
+    match tv with
+      | .nil => "TmVec.nil"
+      | .cons t ts => "TmVec.cons " ++ reprTm t (prec + 1) ++ " " ++ reprTmVec ts (prec + 1)
+
+  def reprTm [Repr α] (tm : Tm n α) (prec : Nat) : Format :=
+    match tm with
+      | .Num num a => s!"Tm.Num {num} {reprPrec a prec}"
+      | .Bool b a => s!"Tm.Bool {b} {reprPrec a prec}"
+      | .Prod q l r a => s!"Tm.Prod {repr q} {reprTm l 0} {reprTm r 0} {reprPrec a prec}"
+      | .BVar id idx a => s!"Tm.BVar {id} {repr idx} {reprPrec a prec}"
+      | .FVar id a => s!"Tm.FVar {id} {reprPrec a prec}"
+      | .If c t e a => s!"Tm.If {reprTm c 0} {reprTm t 0} {reprTm e 0} {reprPrec a prec}"
+      | .Split p l r body a => s!"Tm.Split {reprTm p 0} {l} {r} {reprTm body 0} {reprPrec a prec}"
+      | .Let id ty assn body a => s!"Tm.Let {id} {repr ty} {reprTm assn 0} {reprTm body 0} {reprPrec a prec}"
+      | .Builtin l b tv a => s!"Tm.Builtin {repr l} {repr b} {reprTmVec tv (prec + 1)} {reprPrec a prec}"
+end
+
+instance [Repr α] : Repr (TmVec l n α) where
+  reprPrec := reprTmVec
+
+instance [Repr α] : Repr (Tm n α) where
+  reprPrec := reprTm
+
+
+def Tm.tag (tm : Tm n α) : α :=
+  match tm with
+  | Num _ t
+  | Bool _ t
+  | Prod _ _ _ t
+  | BVar _ _ t
+  | FVar _ t
+  | If _ _ _ t
+  | Split _ _ _ _ t
+  | Let _ _ _ _ t
+  | Builtin _ _ _ t
+  => t
+
+def TmVec.get (tv : TmVec l n α) (f : Fin l) : Tm n α :=
+  match tv, f with
+  | .nil, n => Fin.elim0 n
+  | .cons tm tv', 0 => tm
+  | .cons _ tv', ⟨j + 1, h⟩ => tv'.get ⟨j, Nat.lt_of_succ_lt_succ h⟩
+
+-- like kinda ig
+-- RVal?
+inductive Imm where
+  | CNum : Nat -> Imm
+  | CVar : String -> Imm
+  | CCall : Builtin n -> List Imm -> Imm
+  | CMalloc : Nat -> Imm
+  | CDeref : String -> Nat -> Imm
+  -- | CMalloc : Nat -> Imm
+  deriving Repr
+
+mutual
+  inductive CExpr where
+    -- | CImm : Imm -> CExpr
+    -- compile if to seq cond if ...
+    -- the if branches cannot run before the conditional
+    | CDecl : String -> CExpr
+    | CIf : Imm -> Seq -> Seq -> String -> CExpr
+    | CLet : String -> Imm -> CExpr
+    | CSet : String -> Imm -> CExpr -- offset
+    | CAssn : String -> Nat -> Imm -> CExpr -- offset
+    | CDrop : Imm -> CExpr
+    -- | CBuiltin : Builtin n -> List CExpr -> CExpr
+    deriving Repr
+
+  inductive Seq where
+    | mk : List CExpr -> Imm -> Seq
+    deriving Repr
+end
 
 end Compile
