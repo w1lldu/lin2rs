@@ -6,76 +6,83 @@ namespace Compile
 
 -- a ≤ b => a is a subtype of b (a can cast to b)
 
-inductive Qual where
-  | Un : Qual
-  -- | Aff : Qual
-  | Lin : Qual
-  deriving Repr, BEq, DecidableEq
+-- inductive Qual where
+--   | Un : Qual
+--   -- | Aff : Qual
+--   | Lin : Qual
+--   deriving Repr, BEq, DecidableEq
 
-def Qual.le (q1 q2 : Qual) : Bool:=
-  match q1, q2 with
-  | Un, Lin => true
-  | Lin, Un => false
-  | _, _ => true
+-- def Qual.le (q1 q2 : Qual) : Bool:=
+--   match q1, q2 with
+--   | Un, Lin => true
+--   | Lin, Un => false
+--   | _, _ => true
 
-instance : LE Qual where
-  le q1 q2 := Qual.le q1 q2 = true
+-- instance : LE Qual where
+--   le q1 q2 := Qual.le q1 q2 = true
 
-instance : LT Qual where
-  lt q1 q2 := q1 ≤ q2 ∧ q1 ≠ q2
+-- instance : LT Qual where
+--   lt q1 q2 := q1 ≤ q2 ∧ q1 ≠ q2
 
-instance {q1 q2 : Qual} : Decidable (q1 ≤ q2) := by
-  simp [LE.le]
-  infer_instance
+-- instance {q1 q2 : Qual} : Decidable (q1 ≤ q2) := by
+--   simp [LE.le]
+--   infer_instance
 
-instance (q1 q2 : Qual) : Decidable (q1 < q2) := by
-  simp [LT.lt]
-  infer_instance
+-- instance (q1 q2 : Qual) : Decidable (q1 < q2) := by
+--   simp [LT.lt]
+--   infer_instance
 
-mutual
-  inductive Pt where
-    | Nat : Pt
-    | Bool : Pt
-    | Bytes : Nat -> Pt
-    | Prod : Ty -> Ty -> Pt
-    deriving Repr, BEq
+inductive Ty where
+  | Nat : Ty
+  | Bool : Ty
+  | Bytes : Ty
+  | Prod : Ty -> Ty -> Ty
+  deriving Repr, BEq
 
-  -- cannot prove termination with structure
-  -- doesnt matter since we ended up making everything partial?
-  -- structure Ty where
-  --   qual : Qual
-  --   pt : Pt
-  --   deriving BEq, Repr, DecidableEq
-  inductive Ty where
-    | mk : Qual -> Pt -> Ty
-    deriving Repr, BEq, DecidableEq
-end
+-- mutual
+--   inductive Pt where
+--     | Nat : Pt
+--     | Bool : Pt
+--     | Bytes : Nat -> Pt
+--     | Prod : Ty -> Ty -> Pt
+--     deriving Repr, BEq
 
-def Ty.le (ty1 ty2 : Ty) : Bool :=
-  match ty1, ty2 with
-    | (mk q1 .Nat), (mk q2 .Nat) | (mk q1 .Bool), (mk q2 .Bool) => q1 ≤ q2
-    | (mk q1 (.Prod ty1l ty1r)), (mk q2 (.Prod ty2l ty2r)) => q1 ≤ q2 ∧ Ty.le ty1l ty2l ∧ Ty.le ty1r ty2r
-    | _, _ => false
-  termination_by sizeOf ty1 + sizeOf ty2
+--   -- cannot prove termination with structure
+--   -- doesnt matter since we ended up making everything partial?
+--   -- structure Ty where
+--   --   qual : Qual
+--   --   pt : Pt
+--   --   deriving BEq, Repr, DecidableEq
+--   inductive Ty where
+--     | mk : Qual -> Pt -> Ty
+--     deriving Repr, BEq, DecidableEq
+-- end
 
-instance : LE Ty where
-  le ty1 ty2 := Ty.le ty1 ty2 = true
+-- def Ty.le (ty1 ty2 : Ty) : Bool :=
+--   match ty1, ty2 with
+--     | (mk q1 .Nat), (mk q2 .Nat) | (mk q1 .Bool), (mk q2 .Bool) => q1 ≤ q2
+--     | (mk q1 (.Prod ty1l ty1r)), (mk q2 (.Prod ty2l ty2r)) => q1 ≤ q2 ∧ Ty.le ty1l ty2l ∧ Ty.le ty1r ty2r
+--     | _, _ => false
+--   termination_by sizeOf ty1 + sizeOf ty2
 
-instance : LT Ty where
-  lt ty1 ty2 := ty1 ≤ ty2 ∧ ty1 ≠ ty2
+-- instance : LE Ty where
+--   le ty1 ty2 := Ty.le ty1 ty2 = true
 
-instance (ty1 ty2 : Ty) : Decidable (ty1 ≤ ty2) := by
-  simp [LE.le]
-  infer_instance
+-- instance : LT Ty where
+--   lt ty1 ty2 := ty1 ≤ ty2 ∧ ty1 ≠ ty2
 
-instance (ty1 ty2 : Ty) : Decidable (ty1 < ty2) := by
-  simp [LT.lt]
-  infer_instance
+-- instance (ty1 ty2 : Ty) : Decidable (ty1 ≤ ty2) := by
+--   simp [LE.le]
+--   infer_instance
+
+-- instance (ty1 ty2 : Ty) : Decidable (ty1 < ty2) := by
+--   simp [LT.lt]
+--   infer_instance
 
 inductive Builtin : Nat -> Type
   | Add : Builtin 2
   | Alloc : Builtin 1
-  | Free : Builtin 1
+  | Drop : Builtin 1
   | Fill_rnd : Builtin 1
   | Memcpy : Builtin 3
   deriving Repr, BEq
@@ -84,14 +91,14 @@ def Builtin.repr (b : Builtin n) :=
   match b with
   | Add => "add"
   | Alloc => "alloc"
-  | Free => "free"
+  | Drop => "drop"
   | Fill_rnd => "fill_rnd"
   | Memcpy => "memcpy"
 
 inductive Exp where
   | Num : Nat -> Exp
   | Bool : Bool -> Exp
-  | Prod : Qual -> Exp -> Exp -> Exp
+  | Prod : Exp -> Exp -> Exp
   | Id : String -> Exp
   | If : Exp -> Exp -> Exp -> Exp
   | Split : Exp -> String -> String -> Exp -> Exp
@@ -109,7 +116,7 @@ mutual
   inductive Tm : Nat -> Type u -> Type (u + 1)
     | Num {n α} : Nat -> α -> Tm n α
     | Bool {n α} : Bool -> α -> Tm n α
-    | Prod {n α} : Qual -> Tm n α -> Tm n α -> α -> Tm n α
+    | Prod {n α} : Tm n α -> Tm n α -> α -> Tm n α
     | BVar {n α} : String -> Fin n -> α -> Tm n α
     | FVar {n α} : String -> α -> Tm n α
     | If {n α} : Tm n α -> Tm n α -> Tm n α -> α -> Tm n α
@@ -131,8 +138,8 @@ mutual
       num == num' && a == a'
     | .Bool b a, .Bool b' a' =>
       b == b' && a == a'
-    | .Prod q l r a, .Prod q' l' r' a' =>
-      q == q' && beqTm l l' && beqTm r r' && a == a'
+    | .Prod l r a, .Prod l' r' a' =>
+      beqTm l l' && beqTm r r' && a == a'
     | .BVar id idx a, .BVar id' idx' a' =>
       id == id' && idx == idx' && a == a'
     | .FVar id a, .FVar id' a' =>
@@ -169,7 +176,7 @@ mutual
     match tm with
       | .Num num a => s!"Tm.Num {num} {reprPrec a prec}"
       | .Bool b a => s!"Tm.Bool {b} {reprPrec a prec}"
-      | .Prod q l r a => s!"Tm.Prod {repr q} {reprTm l 0} {reprTm r 0} {reprPrec a prec}"
+      | .Prod l r a => s!"Tm.Prod {reprTm l 0} {reprTm r 0} {reprPrec a prec}"
       | .BVar id idx a => s!"Tm.BVar {id} {repr idx} {reprPrec a prec}"
       | .FVar id a => s!"Tm.FVar {id} {reprPrec a prec}"
       | .If c t e a => s!"Tm.If {reprTm c 0} {reprTm t 0} {reprTm e 0} {reprPrec a prec}"
@@ -189,7 +196,7 @@ def Tm.tag (tm : Tm n α) : α :=
   match tm with
   | Num _ t
   | Bool _ t
-  | Prod _ _ _ t
+  | Prod _ _ t
   | BVar _ _ t
   | FVar _ t
   | If _ _ _ t
@@ -204,33 +211,48 @@ def TmVec.get (tv : TmVec l n α) (f : Fin l) : Tm n α :=
   | .cons tm tv', 0 => tm
   | .cons _ tv', ⟨j + 1, h⟩ => tv'.get ⟨j, Nat.lt_of_succ_lt_succ h⟩
 
--- like kinda ig
--- RVal?
-inductive Imm where
-  | CNum : Nat -> Imm
-  | CVar : String -> Imm
-  | CCall : Builtin n -> List Imm -> Imm
-  | CMalloc : Nat -> Imm
-  | CDeref : String -> Nat -> Imm
-  -- | CMalloc : Nat -> Imm
+inductive CFun where
+  | Add : CFun
+  | Mul : CFun
+  | Malloc : CFun
+  | Free : CFun
+  | Fill_rnd : CFun
+  | Memcpy : CFun
+  | NoOp : CFun
+  deriving Repr
+
+def CFun.repr (cf : CFun) :=
+  match cf with
+  | Add => "add"
+  | Mul => "mul"
+  | Malloc => "malloc"
+  | Free => "free" -- should be drop
+  | Fill_rnd => "fill_rnd"
+  | Memcpy => "memcpy"
+  | NoOp => "no_op"
+
+inductive RVal where
+  | RNum : Nat -> RVal
+  | RVar : String -> RVal
+  | RCall : CFun -> List RVal -> RVal
+  | RDeref : String -> Nat -> RVal
   deriving Repr
 
 mutual
   inductive CExpr where
-    -- | CImm : Imm -> CExpr
     -- compile if to seq cond if ...
     -- the if branches cannot run before the conditional
     | CDecl : String -> CExpr
-    | CIf : Imm -> Seq -> Seq -> String -> CExpr
-    | CLet : String -> Imm -> CExpr
-    | CSet : String -> Imm -> CExpr -- offset
-    | CAssn : String -> Nat -> Imm -> CExpr -- offset
-    | CDrop : Imm -> CExpr
+    | CIf : RVal -> Seq -> Seq -> String -> CExpr
+    | CLet : String -> RVal -> CExpr
+    | CSet : String -> RVal -> CExpr -- offset
+    | CAssn : String -> Nat -> RVal -> CExpr -- offset
+    | CCall : CFun -> List RVal -> CExpr
     -- | CBuiltin : Builtin n -> List CExpr -> CExpr
     deriving Repr
 
   inductive Seq where
-    | mk : List CExpr -> Imm -> Seq
+    | mk : List CExpr -> RVal -> Seq
     deriving Repr
 end
 

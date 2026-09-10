@@ -98,7 +98,7 @@ def Exp.toTm' (e : Exp) (ids : List String) : Tm ids.length :=
     | .some idx => .BVar id idx
   | .Add e1 e2 => .Add (Exp.toTm' e1 ids) (Exp.toTm' e2 ids)
   | .If cond thn els => .If (Exp.toTm' cond ids) (Exp.toTm' thn ids) (Exp.toTm' els ids)
-  | .Split ep l r body => .Split (Exp.toTm' ep ids) l r (Exp.toTm' body (l :: r :: ids))
+  | .Split p l r body => .Split (Exp.toTm' p ids) l r (Exp.toTm' body (l :: r :: ids))
   | .App e1 e2 => .App (Exp.toTm' e1 ids) (Exp.toTm' e2 ids)
   | .Let id ty assn body => .Let id ty (Exp.toTm' assn ids) (Exp.toTm' body (id :: ids))
 

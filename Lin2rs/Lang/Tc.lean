@@ -92,8 +92,8 @@ def ts' (tm : Tm n) (ctx : TyCtx n) : Option (Ty × TyCtx n) := do
       then .some (tyt, ctxt)
       else .none
     else .none
-  | .Split ep l r body =>
-    let (typ, ctx') <- ts' ep ctx
+  | .Split p l r body =>
+    let (typ, ctx') <- ts' p ctx
     let .mk _ ptt := typ
     match ptt with
     | .Prod tyl tyr =>
