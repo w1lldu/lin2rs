@@ -125,7 +125,7 @@ def ts' (tm : Tm n Unit) (ctx : TyCtx n) : Option (Tm n Ty × TyCtx n) := do
       let (tm1', ctx') <- ts' tm1 ctx
       let (tm2', ctx'') <- ts' tm2 ctx'
       let (tm3', ctx''') <- ts' tm3 ctx''
-      if tm1'.tag == .Bytes && tm2'.tag == .Nat && tm3'.tag == .Bytes
+      if tm1'.tag == .Bytes && tm2'.tag == .Bytes && tm3'.tag == .Nat
       then
         .some (.Builtin 3 .Memcpy (.cons tm1' (.cons tm2' (.cons tm3' .nil))) (.Prod .Bytes .Bytes), ctx''')
       else .none

@@ -163,7 +163,7 @@ mutual
         -- t is split for easier termination proving
         let .mk drop _ := compile_drop arg' t.fst t.snd 0
         .mk (arg ++ drop) (.RNum 0)
-      -- should be implemented in c
+      -- implemented in c
       -- | .Fill_rnd, .cons tm .nil =>
       --   let bytes' := s!"bytes_{t.snd}"
       --   let len := s!"len_{t.snd}"
@@ -179,11 +179,25 @@ mutual
             .CLet bytes (.RCall .Malloc [.RCall .Add [arg', .RNum 1]]),
             .CAssn bytes 0 arg'
           ]) (.RVar bytes)
+      | .Memcpy, tv =>
+        let .cons tm1 (.cons tm2 (.cons tm3 .nil)) := tv
+        let p' := "prod_" ++ t.snd.repr
+        let pl := "l" ++ t.snd.repr
+        let pr := "r" ++ t.snd.repr
+        let .mk ps p := compile_tm (.Prod tm1 tm2 (.Prod tm1.tag.fst tm2.tag.fst, t.snd)) env
+        let .mk tm3s tm3' := compile_tm tm3 env
+        .mk (ps ++ [
+          .CLet p' p,
+          .CLet pl (.RDeref p' 0),
+          .CLet pr (.RDeref p' 1)
+        ] ++ tm3s ++ [
+          .CCall .Memcpy [.RVar pl, .RVar pr, tm3']
+        ]) p
       | _, tv =>
         let cf := match b with
         | .Add => .Add
-        | .Memcpy => .Memcpy
         | .Fill_rnd => .Fill_rnd
+        | .Memcpy => .NoOp
         | .Alloc => .NoOp
         | .Drop => .NoOp
         let (tms, args) := ((compile_tv tv env).map (fun (.mk tms tm) => (tms, tm))).unzip
