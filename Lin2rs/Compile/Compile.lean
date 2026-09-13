@@ -96,8 +96,8 @@ def compile_drop (rv : RVal) (ty : Ty) (n : Nat) (t : Nat) : List CExpr × Nat :
   | .Bytes => ([.CCall .Free [rv]], t)
   | .Prod l r =>
     let pname := s!"drop_{n}_{t}"
-    let pl := s!"drop_l_{n}_{t}"
-    let pr := s!"drop_r_{n}_{t}"
+    let pl := s!"dl_{n}_{t}"
+    let pr := s!"dr_{n}_{t}"
     let (ls, t') := compile_drop (.RVar pl) l n (t + 1)
     let (rs, t'') := compile_drop (.RVar pr) r n t'
     ([
@@ -161,7 +161,7 @@ mutual
       | .Drop, .cons tm .nil =>
         let .mk arg arg' := compile_tm tm env
         -- t is split for easier termination proving
-        let .mk drop _ := compile_drop arg' t.fst t.snd 0
+        let .mk drop _ := compile_drop arg' tm.tag.fst t.snd 0
         .mk (arg ++ drop) (.RNum 0)
       -- implemented in c
       -- | .Fill_rnd, .cons tm .nil =>
@@ -181,9 +181,9 @@ mutual
           ]) (.RVar bytes)
       | .Memcpy, tv =>
         let .cons tm1 (.cons tm2 (.cons tm3 .nil)) := tv
-        let p' := "prod_" ++ t.snd.repr
-        let pl := "l" ++ t.snd.repr
-        let pr := "r" ++ t.snd.repr
+        let p' := "memcpy_" ++ t.snd.repr
+        let pl := "ml" ++ t.snd.repr
+        let pr := "mr" ++ t.snd.repr
         let .mk ps p := compile_tm (.Prod tm1 tm2 (.Prod tm1.tag.fst tm2.tag.fst, t.snd)) env
         let .mk tm3s tm3' := compile_tm tm3 env
         .mk (ps ++ [

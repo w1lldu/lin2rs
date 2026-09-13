@@ -290,4 +290,4 @@ def a := (ts [lin2rs if true then 2 else 1])
 
 #eval a.map (fun tm => (compile_tm (tag_tm tm 0).fst #v[]))
 
-#ts drop(memcpy(alloc(5), fill_rnd(alloc(4)), 3))
+#compile drop(memcpy(alloc(5), fill_rnd(alloc(4)), 3))

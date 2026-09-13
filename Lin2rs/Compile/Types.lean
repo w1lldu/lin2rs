@@ -170,19 +170,19 @@ mutual
   def reprTmVec [Repr α] (tv : TmVec l n α) (prec : Nat) : Format :=
     match tv with
       | .nil => "TmVec.nil"
-      | .cons t ts => "TmVec.cons " ++ reprTm t (prec + 1) ++ " " ++ reprTmVec ts (prec + 1)
+      | .cons t ts => s!"(TmVec.cons {reprTm t (prec + 1)} {reprTmVec ts (prec + 1)})"
 
   def reprTm [Repr α] (tm : Tm n α) (prec : Nat) : Format :=
     match tm with
-      | .Num num a => s!"Tm.Num {num} {reprPrec a prec}"
-      | .Bool b a => s!"Tm.Bool {b} {reprPrec a prec}"
-      | .Prod l r a => s!"Tm.Prod {reprTm l 0} {reprTm r 0} {reprPrec a prec}"
-      | .BVar id idx a => s!"Tm.BVar {id} {repr idx} {reprPrec a prec}"
-      | .FVar id a => s!"Tm.FVar {id} {reprPrec a prec}"
-      | .If c t e a => s!"Tm.If {reprTm c 0} {reprTm t 0} {reprTm e 0} {reprPrec a prec}"
-      | .Split p l r body a => s!"Tm.Split {reprTm p 0} {l} {r} {reprTm body 0} {reprPrec a prec}"
-      | .Let id ty assn body a => s!"Tm.Let {id} {repr ty} {reprTm assn 0} {reprTm body 0} {reprPrec a prec}"
-      | .Builtin l b tv a => s!"Tm.Builtin {repr l} {repr b} {reprTmVec tv (prec + 1)} {reprPrec a prec}"
+      | .Num num a => s!"(Tm.Num {num} {reprPrec a prec})"
+      | .Bool b a => s!"(Tm.Bool {b} {reprPrec a prec})"
+      | .Prod l r a => s!"(Tm.Prod {reprTm l 0} {reprTm r 0} {reprPrec a prec})"
+      | .BVar id idx a => s!"(Tm.BVar {id} {repr idx} {reprPrec a prec})"
+      | .FVar id a => s!"(Tm.FVar {id} {reprPrec a prec})"
+      | .If c t e a => s!"(Tm.If {reprTm c 0} {reprTm t 0} {reprTm e 0} {reprPrec a prec}"
+      | .Split p l r body a => s!"Tm.Split {reprTm p 0} {l} {r} {reprTm body 0} {reprPrec a prec})"
+      | .Let id ty assn body a => s!"(Tm.Let {id} {repr ty} {reprTm assn 0} {reprTm body 0} {reprPrec a prec})"
+      | .Builtin l b tv a => s!"(Tm.Builtin {repr l} {repr b} {reprTmVec tv (prec + 1)} {reprPrec a prec})"
 end
 
 instance [Repr α] : Repr (TmVec l n α) where
